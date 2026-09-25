@@ -77,57 +77,74 @@ export interface LanguageItem {
   phonetic?: string;
   bandLevel: 'Band 7.0' | 'Band 7.5' | 'Band 8.0' | 'Band 8.5+';
   definition: string;
+  definitionVi?: string;
   passageQuote: string;
   paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   collocations: string[];
+  collocationsVi?: string[];
   ieltsTip: string;
+  ieltsTipVi?: string;
   category: 'academic-vocab' | 'collocation' | 'idiomatic-phrase' | 'environmental-econ';
 }
 
 export interface GrammarStructureItem {
   id: string;
   title: string;
+  titleVi?: string;
   structurePattern: string;
+  structurePatternVi?: string;
   passageExample: string;
   paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   simplifiedParaphrase: string;
+  simplifiedParaphraseVi?: string;
   ieltsReadingFunction: string;
+  ieltsReadingFunctionVi?: string;
   practiceTip: string;
+  practiceTipVi?: string;
 }
 
 export interface ParaphraseTaskItem {
   id: string;
   questionOrHeading: string;
+  questionOrHeadingVi?: string;
   sourceType: 'Heading' | 'Multiple Choice' | 'Sentence Completion';
   questionRef: string;
+  questionRefVi?: string;
   passageOriginal: string;
   paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   options: {
     id: string;
     text: string;
+    textVi?: string;
     isCorrect: boolean;
   }[];
   explanation: string;
+  explanationVi?: string;
 }
 
 export interface CollocationQuizItem {
   id: string;
   sentenceWithBlank: string;
+  sentenceWithBlankVi?: string;
   targetCollocation: string;
   options: string[];
   correctAnswer: string;
   paragraphRef?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   explanation: string;
+  explanationVi?: string;
 }
 
 export interface SentenceScrambleItem {
   id: string;
   title: string;
+  titleVi?: string;
   grammarNote: string;
+  grammarNoteVi?: string;
   paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
   chunks: string[];
   correctOrder: string[];
   fullSentence: string;
+  fullSentenceVi?: string;
 }
 
 export interface AuthorStanceItem {
@@ -142,19 +159,65 @@ export interface AuthorStanceItem {
 export interface DistractorTrapOption {
   id: string;
   label: string;
+  labelVi?: string;
   description: string;
+  descriptionVi?: string;
 }
 
 export interface DistractorTrapItem {
   id: string;
   deceptiveClaim: string;
+  deceptiveClaimVi?: string;
   sourceContext: string;
+  sourceContextVi?: string;
   paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
   trapOptions: DistractorTrapOption[];
   correctTrapId: string;
   passageEvidence: string;
+  passageEvidenceVi?: string;
   explanation: string;
+  explanationVi?: string;
   ieltsStrategyTip: string;
+  ieltsStrategyTipVi?: string;
+}
+
+export interface ParaphrasePair {
+  statementChunkEn: string;
+  statementChunkVi: string;
+  passageChunkEn: string;
+  passageChunkVi: string;
+  linguisticType: string;
+  linguisticTypeVi: string;
+}
+
+export interface MatchingPeopleInsightItem {
+  id: string;
+  personLetter: 'A' | 'B' | 'C' | 'D' | 'E';
+  personName: string;
+  role: string;
+  roleVi: string;
+  paragraphRef: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  isDistractor: boolean;
+  matchedQuestionId?: number;
+  statementEn?: string;
+  statementVi?: string;
+  exactQuoteEn: string;
+  exactQuoteVi: string;
+  reportingStyle: 'Direct Quote' | 'Reported Speech' | 'Historical Attribution';
+  reportingStyleVi: string;
+  paraphrasePairs: ParaphrasePair[];
+  distractorTrapAnalysis?: {
+    whyDistractorEn: string;
+    whyDistractorVi: string;
+    temptingMisconceptionEn: string;
+    temptingMisconceptionVi: string;
+  };
+  examinerLogicEn: string;
+  examinerLogicVi: string;
+  masterStrategyTipEn: string;
+  masterStrategyTipVi: string;
+  trapAlertEn: string;
+  trapAlertVi: string;
 }
 
 

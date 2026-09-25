@@ -14,9 +14,9 @@ import {
   CONSOLIDATION_PARAPHRASE_TASKS,
   CONSOLIDATION_COLLOCATION_QUIZ,
   CONSOLIDATION_SENTENCE_SCRAMBLE,
-  AUTHOR_ARGUMENT_FLOW,
   CONSOLIDATION_DISTRACTOR_TRAPS,
 } from '../data/consolidationData';
+import { MatchingPeopleInsight } from './MatchingPeopleInsight';
 import {
   Sparkles,
   BookOpen,
@@ -38,6 +38,9 @@ import {
   ChevronRight,
   AlertTriangle,
   Target,
+  Users,
+  Globe,
+  Languages,
 } from 'lucide-react';
 
 interface ConsolidationPanelProps {
@@ -47,7 +50,7 @@ interface ConsolidationPanelProps {
   onNavigateToTest: () => void;
 }
 
-type ConsolidationTab = 'vocabulary' | 'structures' | 'tasks' | 'argument-flow';
+type ConsolidationTab = 'vocabulary' | 'structures' | 'tasks' | 'matching-people';
 
 export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
   paragraphs,
@@ -56,6 +59,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
   onNavigateToTest,
 }) => {
   const [activeTab, setActiveTab] = useState<ConsolidationTab>('vocabulary');
+  const [language, setLanguage] = useState<'en' | 'vi'>('en');
 
   // Vocabulary filters & search
   const [vocabSearch, setVocabSearch] = useState('');
@@ -83,12 +87,13 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
   const [distractorAnswers, setDistractorAnswers] = useState<Record<string, string>>({});
   const [distractorChecked, setDistractorChecked] = useState<Record<string, boolean>>({});
 
-  // Active paragraph in Argument Flow
-  const [selectedFlowPara, setSelectedFlowPara] = useState<'A' | 'B' | 'C' | 'D' | 'E' | 'F'>('A');
+  const isVi = language === 'vi';
 
   // Handle Copy to clipboard
   const handleCopy = (item: LanguageItem) => {
-    const text = `${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\nDefinition: ${item.definition}\nPassage Quote (Para ${item.paragraphRef}): "${item.passageQuote}"\nCollocations: ${item.collocations.join('; ')}\nIELTS Tip: ${item.ieltsTip}`;
+    const text = isVi
+      ? `${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\nĐịnh nghĩa: ${item.definitionVi || item.definition}\nTrích dẫn bài đọc (Đoạn ${item.paragraphRef}): "${item.passageQuote}"\nCollocations: ${item.collocations.join('; ')}\nMẹo IELTS: ${item.ieltsTipVi || item.ieltsTip}`
+      : `${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\nDefinition: ${item.definition}\nPassage Quote (Para ${item.paragraphRef}): "${item.passageQuote}"\nCollocations: ${item.collocations.join('; ')}\nIELTS Tip: ${item.ieltsTip}`;
     navigator.clipboard.writeText(text);
     setCopiedItemId(item.id);
     setTimeout(() => setCopiedItemId(null), 2000);
@@ -96,7 +101,9 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
 
   // Handle Add to Notes
   const handleAddToNotes = (item: LanguageItem) => {
-    const snippet = `[Vocabulary] ${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\n• Definition: ${item.definition}\n• In Passage (Para ${item.paragraphRef}): "${item.passageQuote}"\n• Key Collocations: ${item.collocations.join(', ')}\n• Reading Strategy: ${item.ieltsTip}\n\n`;
+    const snippet = isVi
+      ? `[Từ Vựng] ${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\n• Định nghĩa: ${item.definitionVi || item.definition}\n• Trong bài đọc (Đoạn ${item.paragraphRef}): "${item.passageQuote}"\n• Collocations: ${item.collocations.join(', ')}\n• Chiến thuật đọc: ${item.ieltsTipVi || item.ieltsTip}\n\n`
+      : `[Vocabulary] ${item.term} (${item.partOfSpeech}) - ${item.bandLevel}\n• Definition: ${item.definition}\n• In Passage (Para ${item.paragraphRef}): "${item.passageQuote}"\n• Key Collocations: ${item.collocations.join(', ')}\n• Reading Strategy: ${item.ieltsTip}\n\n`;
     onAddNote(snippet);
     setAddedNotesItemId(item.id);
     setTimeout(() => setAddedNotesItemId(null), 2000);
@@ -104,7 +111,9 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
 
   // Add Grammar Structure to Notes
   const handleAddStructureToNotes = (struct: GrammarStructureItem) => {
-    const snippet = `[Structure] ${struct.title}\n• Pattern: ${struct.structurePattern}\n• Passage Example (Para ${struct.paragraphRef}): "${struct.passageExample}"\n• Simplified Meaning: ${struct.simplifiedParaphrase}\n• IELTS Reading Function: ${struct.ieltsReadingFunction}\n\n`;
+    const snippet = isVi
+      ? `[Cấu Trúc] ${struct.titleVi || struct.title}\n• Mẫu câu: ${struct.structurePatternVi || struct.structurePattern}\n• Ví dụ bài đọc (Đoạn ${struct.paragraphRef}): "${struct.passageExample}"\n• Diễn giải dễ hiểu: ${struct.simplifiedParaphraseVi || struct.simplifiedParaphrase}\n• Chức năng đọc IELTS: ${struct.ieltsReadingFunctionVi || struct.ieltsReadingFunction}\n\n`
+      : `[Structure] ${struct.title}\n• Pattern: ${struct.structurePattern}\n• Passage Example (Para ${struct.paragraphRef}): "${struct.passageExample}"\n• Simplified Meaning: ${struct.simplifiedParaphrase}\n• IELTS Reading Function: ${struct.ieltsReadingFunction}\n\n`;
     onAddNote(snippet);
     setAddedNotesItemId(struct.id);
     setTimeout(() => setAddedNotesItemId(null), 2000);
@@ -117,6 +126,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
     const matchesSearch =
       item.term.toLowerCase().includes(vocabSearch.toLowerCase()) ||
       item.definition.toLowerCase().includes(vocabSearch.toLowerCase()) ||
+      (item.definitionVi && item.definitionVi.toLowerCase().includes(vocabSearch.toLowerCase())) ||
       item.collocations.some((c) => c.toLowerCase().includes(vocabSearch.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
@@ -179,34 +189,62 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-xs border border-amber-300">
                 <Sparkles className="w-3 h-3 text-amber-600" />
-                <span>Consolidation Unlocked</span>
+                <span>{isVi ? 'Kho Lưu Trữ Củng Cố Kiến Thức' : 'Consolidation Unlocked'}</span>
               </span>
               <span className="text-xs text-slate-500 font-medium">
-                Passage 2: The history of documentary films
+                {isVi ? 'Bài đọc 2: Lịch sử phim tài liệu' : 'Passage 2: The history of documentary films'}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mt-1">
-              Language Input & Reading Skill Consolidation
+              {isVi ? 'Củng Cố Ngôn Ngữ & Kỹ Năng Đọc IELTS' : 'Language Input & Reading Skill Consolidation'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-              Review high-yield IELTS vocabulary, discourse structures, and practice paraphrase decoding to maximize your Band score.
+              {isVi
+                ? 'Ôn tập từ vựng học thuật đỉnh cao, cấu trúc diễn giải thực chiến và chiến lược chinh phục dạng bài nối nhận định để bứt phá Band điểm.'
+                : 'Review high-yield IELTS vocabulary, discourse structures, and master strategy for matching statements with people to maximize your Band score.'}
             </p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          {/* Quick Actions & Language Toggle */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {/* Bilingual Switcher */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 shadow-2xs">
+              <button
+                onClick={() => setLanguage('en')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                  language === 'en'
+                    ? 'bg-white text-blue-700 shadow-xs ring-1 ring-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Switch to English"
+              >
+                <span>🇬🇧 English</span>
+              </button>
+              <button
+                onClick={() => setLanguage('vi')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition ${
+                  language === 'vi'
+                    ? 'bg-white text-red-700 shadow-xs ring-1 ring-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Chuyển sang Tiếng Việt"
+              >
+                <span>🇻🇳 Tiếng Việt</span>
+              </button>
+            </div>
+
             <button
               onClick={onNavigateToPractice}
-              className="px-3 py-1.5 rounded text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition flex items-center gap-1.5"
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Back to Practice Mode</span>
+              <span>{isVi ? 'Về Luyện Tập' : 'Back to Practice Mode'}</span>
             </button>
             <button
               onClick={onNavigateToTest}
-              className="px-3 py-1.5 rounded text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition flex items-center gap-1.5"
             >
-              <span>Go to Test Mode</span>
+              <span>{isVi ? 'Vào Thi Thử' : 'Go to Test Mode'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -224,7 +262,11 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Key Words & Phrases ({CONSOLIDATION_VOCABULARY.length})</span>
+            <span>
+              {isVi
+                ? `Từ Vựng Trọng Tâm (${CONSOLIDATION_VOCABULARY.length})`
+                : `Key Words & Phrases (${CONSOLIDATION_VOCABULARY.length})`}
+            </span>
           </button>
 
           <button
@@ -237,7 +279,11 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Useful Expressions & Structures ({CONSOLIDATION_GRAMMAR_STRUCTURES.length})</span>
+            <span>
+              {isVi
+                ? `Cấu Trúc Thực Chiến (${CONSOLIDATION_GRAMMAR_STRUCTURES.length})`
+                : `Useful Expressions & Structures (${CONSOLIDATION_GRAMMAR_STRUCTURES.length})`}
+            </span>
           </button>
 
           <button
@@ -250,20 +296,26 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
             }`}
           >
             <Puzzle className="w-4 h-4" />
-            <span>Skill Activities & Tasks (4 Activities)</span>
+            <span>
+              {isVi ? 'Luyện Tập Kỹ Năng (4 Hoạt Động)' : 'Skill Activities & Tasks (4 Activities)'}
+            </span>
           </button>
 
           <button
-            id="tab-btn-argument"
-            onClick={() => setActiveTab('argument-flow')}
+            id="tab-btn-matching-people"
+            onClick={() => setActiveTab('matching-people')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shrink-0 ${
-              activeTab === 'argument-flow'
+              activeTab === 'matching-people'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Compass className="w-4 h-4" />
-            <span>Argument Flow & Author Stance</span>
+            <Users className="w-4 h-4" />
+            <span>
+              {isVi
+                ? 'Chiến Lược Nối Nhận Định Với Nhân Vật'
+                : 'Matching Statements with People Mastery'}
+            </span>
           </button>
         </div>
       </div>
@@ -283,7 +335,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                     type="text"
                     value={vocabSearch}
                     onChange={(e) => setVocabSearch(e.target.value)}
-                    placeholder="Search term, definition, or collocation..."
+                    placeholder={isVi ? "Tìm từ vựng, định nghĩa hoặc cụm từ..." : "Search term, definition, or collocation..."}
                     className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                   />
                 </div>
@@ -291,11 +343,11 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                 {/* Category Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
                   {[
-                    { id: 'all', label: 'All Items' },
-                    { id: 'environmental-econ', label: 'Environmental / Econ' },
-                    { id: 'academic-vocab', label: 'Academic Vocab' },
-                    { id: 'collocation', label: 'Collocations' },
-                    { id: 'idiomatic-phrase', label: 'Idioms / Signposts' },
+                    { id: 'all', label: isVi ? 'Tất Cả' : 'All Items' },
+                    { id: 'environmental-econ', label: isVi ? 'Môi Trường & Kinh Tế' : 'Environmental / Econ' },
+                    { id: 'academic-vocab', label: isVi ? 'Từ Vựng Học Thuật' : 'Academic Vocab' },
+                    { id: 'collocation', label: isVi ? 'Cụm Từ (Collocations)' : 'Collocations' },
+                    { id: 'idiomatic-phrase', label: isVi ? 'Thành Ngữ & Từ Báo Hiệu' : 'Idioms / Signposts' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -345,21 +397,28 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                               {item.bandLevel}
                             </span>
                             <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              Para {item.paragraphRef}
+                              {isVi ? `Đoạn ${item.paragraphRef}` : `Para ${item.paragraphRef}`}
                             </span>
                           </div>
                         </div>
 
                         {/* Definition */}
-                        <p className="text-sm text-slate-700 font-medium leading-relaxed mb-3">
-                          {item.definition}
+                        <p className="text-sm text-slate-700 font-medium leading-relaxed mb-1.5">
+                          {isVi ? (item.definitionVi || item.definition) : item.definition}
                         </p>
+                        {isVi && item.definitionVi && (
+                          <p className="text-xs text-slate-500 italic font-serif leading-relaxed mb-3">
+                            En: {item.definition}
+                          </p>
+                        )}
 
                         {/* Exact Passage Quote */}
                         <div className="bg-slate-50 border-l-3 border-blue-500 p-3 rounded-r-lg mb-3">
                           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1">
-                            <span>Passage Context</span>
-                            <span className="text-slate-400 font-normal">(Paragraph {item.paragraphRef})</span>
+                            <span>{isVi ? 'Ngữ Cảnh Trong Bài Đọc' : 'Passage Context'}</span>
+                            <span className="text-slate-400 font-normal">
+                              ({isVi ? `Đoạn ${item.paragraphRef}` : `Paragraph ${item.paragraphRef}`})
+                            </span>
                           </div>
                           <p className="text-xs sm:text-sm text-slate-800 italic font-serif leading-relaxed">
                             "{item.passageQuote}"
@@ -370,16 +429,19 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         <div className="mb-3">
                           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
                             <TrendingUp className="w-3 h-3 text-emerald-600" />
-                            <span>IELTS High-Yield Collocations</span>
+                            <span>{isVi ? 'Cụm Từ IELTS Điểm Cao' : 'IELTS High-Yield Collocations'}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {item.collocations.map((colloc, idx) => (
-                              <span
+                              <div
                                 key={idx}
-                                className="px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200/80"
+                                className="px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200/80 flex flex-col"
                               >
-                                {colloc}
-                              </span>
+                                <span className="font-semibold text-slate-800">{colloc}</span>
+                                {isVi && item.collocationsVi?.[idx] && (
+                                  <span className="text-[10px] text-slate-500 font-normal">{item.collocationsVi[idx]}</span>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -388,10 +450,10 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         <div className="bg-amber-50/70 border border-amber-200/80 rounded-lg p-2.5 mb-4">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 mb-1">
                             <Lightbulb className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                            <span>IELTS Reading Insight</span>
+                            <span>{isVi ? 'Góc Nhìn Chiến Thuật IELTS' : 'IELTS Reading Insight'}</span>
                           </div>
                           <p className="text-xs text-amber-800 leading-relaxed">
-                            {item.ieltsTip}
+                            {isVi ? (item.ieltsTipVi || item.ieltsTip) : item.ieltsTip}
                           </p>
                         </div>
                       </div>
@@ -404,7 +466,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                           title="Copy details to clipboard"
                         >
                           {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                          <span>{isVi ? (isCopied ? 'Đã Sao Chép' : 'Sao Chép') : (isCopied ? 'Copied' : 'Copy')}</span>
                         </button>
 
                         <button
@@ -413,7 +475,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                           title="Add to Passage/Question Notes"
                         >
                           {isAdded ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Bookmark className="w-3.5 h-3.5" />}
-                          <span>{isAdded ? 'Added to Notes!' : 'Save to Study Notes'}</span>
+                          <span>{isVi ? (isAdded ? 'Đã Lưu Vào Vở!' : 'Lưu Vào Sổ Tay') : (isAdded ? 'Added to Notes!' : 'Save to Study Notes')}</span>
                         </button>
                       </div>
                     </div>
@@ -430,10 +492,14 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                 <Lightbulb className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-sm font-bold text-blue-950">
-                    Why Discourse Structures Matter for IELTS Reading
+                    {isVi
+                      ? 'Tại Sao Cấu Trúc Diễn Ngôn Lại Quan Trọng Trong IELTS Reading?'
+                      : 'Why Discourse Structures Matter for IELTS Reading'}
                   </h3>
                   <p className="text-xs sm:text-sm text-blue-800 mt-1 leading-relaxed">
-                    Passage 2 and 3 frequently use inverted conditionals, concessive clauses, and hedging to express nuanced scientific and economic arguments. Recognizing these structural templates allows you to instantly determine whether the writer is presenting a fact, a hypothesis, or an alternative counter-argument.
+                    {isVi
+                      ? 'Passage 2 và 3 thường xuyên sử dụng câu điều kiện đảo ngữ, mệnh đề nhượng bộ và ngôn ngữ chừng mực (hedging) để thể hiện các luận điểm khoa học và lịch sử tinh tế. Nhận diện các cấu trúc này giúp bạn xác định ngay tác giả đang nêu sự thật, giả thuyết hay một ý kiến phản biện đối nghịch.'
+                      : 'Passage 2 and 3 frequently use inverted conditionals, concessive clauses, and hedging to express nuanced scientific and economic arguments. Recognizing these structural templates allows you to instantly determine whether the writer is presenting a fact, a hypothesis, or an alternative counter-argument.'}
                   </p>
                 </div>
               </div>
@@ -454,29 +520,34 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                           </span>
                           <div>
                             <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                              {struct.title}
+                              {isVi ? (struct.titleVi || struct.title) : struct.title}
                             </h3>
+                            {isVi && struct.titleVi && (
+                              <span className="text-xs text-slate-500 font-mono block">En: {struct.title}</span>
+                            )}
                           </div>
                         </div>
 
                         <span className="self-start sm:self-auto px-2.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                          Paragraph {struct.paragraphRef}
+                          {isVi ? `Đoạn ${struct.paragraphRef}` : `Paragraph ${struct.paragraphRef}`}
                         </span>
                       </div>
 
                       {/* Structural Formula Pattern */}
                       <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs sm:text-sm mb-4 border border-slate-800">
                         <div className="text-[10px] uppercase font-bold text-blue-400 mb-1">
-                          Grammatical Pattern / Formula
+                          {isVi ? 'Mẫu Cấu Trúc / Công Thức Ngữ Pháp' : 'Grammatical Pattern / Formula'}
                         </div>
-                        <div className="text-emerald-300 font-semibold">{struct.structurePattern}</div>
+                        <div className="text-emerald-300 font-semibold">
+                          {isVi ? (struct.structurePatternVi || struct.structurePattern) : struct.structurePattern}
+                        </div>
                       </div>
 
                       {/* Two Column comparison: Original vs Simplified */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                         <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
                           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                            Passage Example (Paragraph {struct.paragraphRef})
+                            {isVi ? `Ví Dụ Trong Bài (Đoạn ${struct.paragraphRef})` : `Passage Example (Paragraph ${struct.paragraphRef})`}
                           </div>
                           <p className="text-xs sm:text-sm text-slate-900 font-serif italic leading-relaxed">
                             "{struct.passageExample}"
@@ -485,10 +556,10 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
 
                         <div className="p-3.5 bg-emerald-50/70 rounded-lg border border-emerald-200">
                           <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
-                            Plain-English Paraphrase
+                            {isVi ? 'Diễn Giải Nghĩa Dễ Hiểu' : 'Plain-English Paraphrase'}
                           </div>
                           <p className="text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed">
-                            {struct.simplifiedParaphrase}
+                            {isVi ? (struct.simplifiedParaphraseVi || struct.simplifiedParaphrase) : struct.simplifiedParaphrase}
                           </p>
                         </div>
                       </div>
@@ -497,14 +568,17 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                       <div className="p-4 bg-slate-100/70 rounded-lg border border-slate-200/80 mb-4">
                         <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
                           <Award className="w-3.5 h-3.5 text-blue-600" />
-                          <span>IELTS Reading Function & Traps</span>
+                          <span>{isVi ? 'Chức Năng Đọc IELTS & Cạm Bẫy' : 'IELTS Reading Function & Traps'}</span>
                         </div>
                         <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                          {struct.ieltsReadingFunction}
+                          {isVi ? (struct.ieltsReadingFunctionVi || struct.ieltsReadingFunction) : struct.ieltsReadingFunction}
                         </p>
                         <div className="mt-2 text-xs text-blue-700 font-medium flex items-center gap-1">
                           <ArrowRight className="w-3 h-3 text-blue-600 shrink-0" />
-                          <span>Quick Reading Tip: {struct.practiceTip}</span>
+                          <span>
+                            <strong>{isVi ? 'Mẹo đọc nhanh: ' : 'Quick Reading Tip: '}</strong>
+                            {isVi ? (struct.practiceTipVi || struct.practiceTip) : struct.practiceTip}
+                          </span>
                         </div>
                       </div>
 
@@ -515,7 +589,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition"
                         >
                           {isAdded ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Bookmark className="w-3.5 h-3.5" />}
-                          <span>{isAdded ? 'Added to Notes!' : 'Save Structure to Notes'}</span>
+                          <span>{isVi ? (isAdded ? 'Đã Lưu Vào Vở!' : 'Lưu Cấu Trúc Vào Sổ Tay') : (isAdded ? 'Added to Notes!' : 'Save Structure to Notes')}</span>
                         </button>
                       </div>
                     </div>
@@ -533,18 +607,20 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                 <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
                   <div>
                     <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800">
-                      Activity 1 of 4
+                      {isVi ? 'Hoạt Động 1/4' : 'Activity 1 of 4'}
                     </span>
                     <h3 className="text-lg font-bold text-slate-900 mt-1">
-                      IELTS Paraphrase & Synonym Hunt
+                      {isVi ? 'Giải Mã Paraphrase & Cặp Từ Đồng Nghĩa IELTS' : 'IELTS Paraphrase & Synonym Hunt'}
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                      IELTS questions never use the exact wording of headings or questions. Match each question prompt with its authentic phrasing from the passage.
+                      {isVi
+                        ? 'Đề thi IELTS không bao giờ lặp lại y nguyên từ ngữ trong đề. Hãy đối chiếu từng câu hỏi với cách diễn đạt tương đương trong bài đọc.'
+                        : 'IELTS questions never use the exact wording of headings or questions. Match each question prompt with its authentic phrasing from the passage.'}
                     </p>
                   </div>
 
                   <div className="bg-slate-100 px-3 py-2 rounded-lg text-center shrink-0 border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Score</div>
+                    <div className="text-xs text-slate-500 font-medium">{isVi ? 'Điểm' : 'Score'}</div>
                     <div className="text-lg font-black text-blue-600">
                       {correctParaphraseCount} / {CONSOLIDATION_PARAPHRASE_TASKS.length}
                     </div>
@@ -565,10 +641,10 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Item {idx + 1} • {task.questionRef}
+                            {isVi ? `Mục ${idx + 1} • ${task.questionRef}` : `Item ${idx + 1} • ${task.questionRef}`}
                           </span>
                           <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">
-                            Para {task.paragraphRef}
+                            {isVi ? `Đoạn ${task.paragraphRef}` : `Para ${task.paragraphRef}`}
                           </span>
                         </div>
 
@@ -578,7 +654,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         </div>
 
                         <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
-                          Select the authentic text excerpt that paraphrases this:
+                          {isVi ? 'Chọn đoạn trích diễn đạt tương đương (paraphrase) chuẩn xác:' : 'Select the authentic text excerpt that paraphrases this:'}
                         </div>
 
                         {/* Options */}
@@ -635,7 +711,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             }
                             className="px-4 py-1.5 rounded text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs"
                           >
-                            Check Paraphrase
+                            {isVi ? 'Kiểm Tra Paraphrase' : 'Check Paraphrase'}
                           </button>
                         ) : (
                           <div
@@ -649,12 +725,12 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                               {isCorrect ? (
                                 <>
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                  <span>Spot on! Paraphrase confirmed.</span>
+                                  <span>{isVi ? 'Chính xác! Cặp paraphrase hoàn toàn chuẩn xác.' : 'Spot on! Paraphrase confirmed.'}</span>
                                 </>
                               ) : (
                                 <>
                                   <XCircle className="w-4 h-4 text-rose-600" />
-                                  <span>Not quite. Review the IELTS connection below:</span>
+                                  <span>{isVi ? 'Chưa đúng. Hãy xem phân tích liên hệ IELTS dưới đây:' : 'Not quite. Review the IELTS connection below:'}</span>
                                 </>
                               )}
                             </div>
@@ -672,18 +748,20 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                 <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
                   <div>
                     <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
-                      Activity 2 of 4
+                      {isVi ? 'Hoạt Động 2/4' : 'Activity 2 of 4'}
                     </span>
                     <h3 className="text-lg font-bold text-slate-900 mt-1">
-                      Academic Collocations in Context
+                      {isVi ? 'Collocations Học Thuật Theo Ngữ Cảnh' : 'Academic Collocations in Context'}
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                      Select the precise academic collocation that accurately completes each sentence derived from the reading passage.
+                      {isVi
+                        ? 'Chọn cụm từ collocations học thuật chính xác để điền vào chỗ trống trong các câu trích xuất từ bài đọc.'
+                        : 'Select the precise academic collocation that accurately completes each sentence derived from the reading passage.'}
                     </p>
                   </div>
 
                   <div className="bg-slate-100 px-3 py-2 rounded-lg text-center shrink-0 border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Score</div>
+                    <div className="text-xs text-slate-500 font-medium">{isVi ? 'Điểm' : 'Score'}</div>
                     <div className="text-lg font-black text-emerald-600">
                       {correctCollocationCount} / {CONSOLIDATION_COLLOCATION_QUIZ.length}
                     </div>
@@ -704,11 +782,11 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                              Collocation {idx + 1}
+                              {isVi ? `Cụm Từ ${idx + 1}` : `Collocation ${idx + 1}`}
                             </span>
                             {quiz.paragraphRef && (
                               <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
-                                Para {quiz.paragraphRef}
+                                {isVi ? `Đoạn ${quiz.paragraphRef}` : `Para ${quiz.paragraphRef}`}
                               </span>
                             )}
                           </div>
@@ -769,7 +847,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             }
                             className="w-full py-1.5 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
                           >
-                            Check Answer
+                            {isVi ? 'Kiểm Tra Đáp Án' : 'Check Answer'}
                           </button>
                         ) : (
                           <div
@@ -780,7 +858,9 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             }`}
                           >
                             <span className="font-bold block mb-0.5">
-                              {isCorrect ? '✓ Correct Collocation' : `✕ Correct: "${quiz.correctAnswer}"`}
+                              {isCorrect
+                                ? (isVi ? '✓ Cụm Từ Chính Xác' : '✓ Correct Collocation')
+                                : (isVi ? `✕ Đáp án đúng: "${quiz.correctAnswer}"` : `✕ Correct: "${quiz.correctAnswer}"`)}
                             </span>
                             {quiz.explanation}
                           </div>
@@ -795,13 +875,17 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
               <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
                 <div className="mb-4 pb-3 border-b border-slate-100">
                   <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
-                    Activity 3 of 4
+                    {isVi ? 'Hoạt Động 3/4' : 'Activity 3 of 4'}
                   </span>
                   <h3 className="text-lg font-bold text-slate-900 mt-1">
-                    Sentence Inversion & Discourse Structure Rebuilder
+                    {isVi
+                      ? 'Lắp Ghép Cấu Trúc Đảo Ngữ & Mạch Luận Điểm Học Thuật'
+                      : 'Sentence Inversion & Discourse Structure Rebuilder'}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                    Click chunks in logical order to assemble the complex academic sentences from the text. This builds your ability to rapidly parse complex clauses during timed reading.
+                    {isVi
+                      ? 'Nhấp vào các phân đoạn (chunks) theo thứ tự ngữ pháp chính xác để tái tạo câu học thuật phức tạp từ bài đọc. Kỹ năng này giúp bạn giải mã nhanh các mệnh đề dài khi đọc dưới áp lực thời gian.'
+                      : 'Click chunks in logical order to assemble the complex academic sentences from the text. This builds your ability to rapidly parse complex clauses during timed reading.'}
                   </p>
                 </div>
 
@@ -817,15 +901,17 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-bold text-slate-700">
-                            Sentence {idx + 1}: {scramble.title}
+                            {isVi ? `Câu ${idx + 1}: ${scramble.title}` : `Sentence ${idx + 1}: ${scramble.title}`}
                           </span>
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
-                            Para {scramble.paragraphRef}
+                            {isVi ? `Đoạn ${scramble.paragraphRef}` : `Para ${scramble.paragraphRef}`}
                           </span>
                         </div>
 
                         <p className="text-xs text-slate-600 mb-3 bg-white p-2.5 rounded border border-slate-200">
-                          <span className="font-bold text-slate-800">Structural clue: </span>
+                          <span className="font-bold text-slate-800">
+                            {isVi ? 'Gợi ý cấu trúc: ' : 'Structural clue: '}
+                          </span>
                           {scramble.grammarNote}
                         </p>
 
@@ -833,7 +919,9 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         <div className="min-h-[50px] p-3 rounded-lg border-2 border-dashed border-slate-300 bg-white mb-3 flex flex-wrap items-center gap-2">
                           {selectedChunks.length === 0 ? (
                             <span className="text-xs text-slate-400 italic">
-                              Click the phrase chips below in grammatical order to reconstruct the sentence...
+                              {isVi
+                                ? 'Nhấp vào các mảnh cụm từ bên dưới theo đúng trật tự ngữ pháp để ghép thành câu hoàn chỉnh...'
+                                : 'Click the phrase chips below in grammatical order to reconstruct the sentence...'}
                             </span>
                           ) : (
                             selectedChunks.map((chunk, cIdx) => (
@@ -841,7 +929,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                                 key={cIdx}
                                 onClick={() => handleToggleScrambleChunk(scramble.id, chunk)}
                                 className="px-3 py-1.5 rounded bg-blue-100 text-blue-900 text-xs font-semibold hover:bg-rose-100 hover:text-rose-800 transition flex items-center gap-1.5 border border-blue-200"
-                                title="Click to remove"
+                                title={isVi ? 'Nhấp để xóa mảnh này' : 'Click to remove'}
                               >
                                 <span>{chunk}</span>
                                 <span className="text-blue-400 text-[10px]">✕</span>
@@ -881,25 +969,29 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             onClick={() => handleCheckScramble(scramble)}
                             className="px-4 py-1.5 rounded text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition"
                           >
-                            Verify Order
+                            {isVi ? 'Kiểm Tra Thứ Tự' : 'Verify Order'}
                           </button>
 
                           <button
                             onClick={() => handleResetScramble(scramble.id)}
                             className="px-3 py-1.5 rounded text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
                           >
-                            Reset
+                            {isVi ? 'Đặt Lại' : 'Reset'}
                           </button>
 
                           {result !== null && result !== undefined && (
                             <div className="flex items-center gap-1 text-xs font-bold">
                               {result ? (
                                 <span className="text-emerald-700 flex items-center gap-1">
-                                  <CheckCircle2 className="w-4 h-4" /> Perfect sentence construction!
+                                  <CheckCircle2 className="w-4 h-4" />{' '}
+                                  {isVi ? 'Cấu trúc câu hoàn toàn chính xác!' : 'Perfect sentence construction!'}
                                 </span>
                               ) : (
                                 <span className="text-rose-600 flex items-center gap-1">
-                                  <XCircle className="w-4 h-4" /> Sequence incorrect. Review the grammar clue above and try again.
+                                  <XCircle className="w-4 h-4" />{' '}
+                                  {isVi
+                                    ? 'Thứ tự chưa đúng. Hãy xem gợi ý cấu trúc phía trên và thử lại.'
+                                    : 'Sequence incorrect. Review the grammar clue above and try again.'}
                                 </span>
                               )}
                             </div>
@@ -922,18 +1014,24 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                 <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
                   <div>
                     <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900">
-                      Activity 4 of 4
+                      {isVi ? 'Hoạt Động 4/4' : 'Activity 4 of 4'}
                     </span>
                     <h3 className="text-lg font-bold text-slate-900 mt-1">
-                      IELTS Distractor Detective: Exposing False Answer Traps
+                      {isVi
+                        ? 'Thám Tử Bẫy Đề IELTS: Vạch Trần Các Phương Án Nhiễu Đánh Lừa'
+                        : 'IELTS Distractor Detective: Exposing False Answer Traps'}
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                      Cambridge IELTS examiners engineer distractors using systematic cognitive traps. Diagnose the exact fallacy behind each deceptive statement.
+                      {isVi
+                        ? 'Giám khảo Cambridge IELTS thiết kế bẫy nhiễu dựa trên các điểm mù tư duy có hệ thống. Hãy chẩn đoán chính xác kiểu ngụy biện ẩn sau mỗi nhận định giả định.'
+                        : 'Cambridge IELTS examiners engineer distractors using systematic cognitive traps. Diagnose the exact fallacy behind each deceptive statement.'}
                     </p>
                   </div>
 
                   <div className="bg-slate-100 px-3 py-2 rounded-lg text-center shrink-0 border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Score</div>
+                    <div className="text-xs text-slate-500 font-medium">
+                      {isVi ? 'Điểm số' : 'Score'}
+                    </div>
                     <div className="text-lg font-black text-amber-600">
                       {correctDistractorCount} / {CONSOLIDATION_DISTRACTOR_TRAPS.length}
                     </div>
@@ -954,14 +1052,14 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                              Trap Case {idx + 1}
+                              {isVi ? `Tình Huống Bẫy ${idx + 1}` : `Trap Case ${idx + 1}`}
                             </span>
                             <span className="text-xs text-slate-600 font-medium">
                               • {trap.sourceContext}
                             </span>
                           </div>
                           <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                            Para {trap.paragraphRef} Trap
+                            {isVi ? `Bẫy Đoạn ${trap.paragraphRef}` : `Para ${trap.paragraphRef} Trap`}
                           </span>
                         </div>
 
@@ -971,7 +1069,9 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                             <div>
                               <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1">
-                                Deceptive IELTS Claim / Distractor Option:
+                                {isVi
+                                  ? 'Nhận Định Bẫy / Lựa Chọn Sai Lạc Đề Thi:'
+                                  : 'Deceptive IELTS Claim / Distractor Option:'}
                               </span>
                               <p className="text-xs sm:text-sm font-semibold text-slate-900 leading-relaxed font-serif italic">
                                 "{trap.deceptiveClaim}"
@@ -982,7 +1082,11 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
 
                         <div className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide flex items-center gap-1.5">
                           <Target className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Diagnose the IELTS examiner trap archetype:</span>
+                          <span>
+                            {isVi
+                              ? 'Chẩn đoán kiểu bẫy kinh điển của giám khảo IELTS:'
+                              : 'Diagnose the IELTS examiner trap archetype:'}
+                          </span>
                         </div>
 
                         {/* Trap Options Grid */}
@@ -1046,7 +1150,7 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             }
                             className="px-4 py-1.5 rounded text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs"
                           >
-                            Diagnose Trap
+                            {isVi ? 'Chẩn Đoán Bẫy Này' : 'Diagnose Trap'}
                           </button>
                         ) : (
                           <div
@@ -1061,13 +1165,17 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                                 {isCorrect ? (
                                   <>
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>Correct Diagnosis! Trap successfully exposed.</span>
+                                    <span>
+                                      {isVi
+                                        ? 'Chẩn đoán chính xác! Bẫy đã bị bóc trần thành công.'
+                                        : 'Correct Diagnosis! Trap successfully exposed.'}
+                                    </span>
                                   </>
                                 ) : (
                                   <>
                                     <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
                                     <span>
-                                      Incorrect diagnosis. Correct trap:{' '}
+                                      {isVi ? 'Chẩn đoán chưa đúng. Bẫy thực sự: ' : 'Incorrect diagnosis. Correct trap: '}
                                       <span className="underline">
                                         {trap.trapOptions.find((o) => o.id === trap.correctTrapId)?.label}
                                       </span>
@@ -1087,17 +1195,21 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                                 className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1"
                               >
                                 <RotateCcw className="w-3 h-3" />
-                                Retry
+                                {isVi ? 'Thử lại' : 'Retry'}
                               </button>
                             </div>
 
                             <div className="bg-white/80 p-3 rounded border border-slate-200 text-xs text-slate-800 space-y-1.5">
                               <div>
-                                <span className="font-bold text-slate-900">Passage Truth: </span>
+                                <span className="font-bold text-slate-900">
+                                  {isVi ? 'Thực Tế Bài Đọc: ' : 'Passage Truth: '}
+                                </span>
                                 <span>{trap.passageEvidence}</span>
                               </div>
                               <div>
-                                <span className="font-bold text-slate-900">Examiner Logic: </span>
+                                <span className="font-bold text-slate-900">
+                                  {isVi ? 'Tư Duy Giám Khảo: ' : 'Examiner Logic: '}
+                                </span>
                                 <span>{trap.explanation}</span>
                               </div>
                             </div>
@@ -1105,7 +1217,8 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
                             <div className="flex items-start gap-1.5 text-xs text-amber-900 bg-amber-100/70 p-2.5 rounded border border-amber-200">
                               <Lightbulb className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                               <span>
-                                <strong>IELTS Test Strategy:</strong> {trap.ieltsStrategyTip}
+                                <strong>{isVi ? 'Chiến Thuật Thi IELTS:' : 'IELTS Test Strategy:'}</strong>{' '}
+                                {trap.ieltsStrategyTip}
                               </span>
                             </div>
                           </div>
@@ -1118,128 +1231,12 @@ export const ConsolidationPanel: React.FC<ConsolidationPanelProps> = ({
             </div>
           )}
 
-          {/* TAB 4: ARGUMENT FLOW & AUTHOR STANCE */}
-          {activeTab === 'argument-flow' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-                <div className="max-w-3xl mb-6">
-                  <h3 className="text-lg font-bold text-slate-900">
-                    Deconstructing Author Stance & Argument Structure
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                    Passage 2 methodically traces the historical and artistic evolution of documentary filmmaking from early 20th-century skepticism and criticisms (Para A), through origin debates (Para B), stylistic revolutions between Grierson and Direct Cinema (Para C), technological democratization via video/digital cameras (Para D), to the subjective paradigm shift with Catfish (Para E), and modern global festival showcases (Para F).
-                  </p>
-                </div>
-
-                {/* Horizontal Paragraph Stepper */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-6">
-                  {AUTHOR_ARGUMENT_FLOW.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedFlowPara(item.paragraph as 'A' | 'B' | 'C' | 'D' | 'E' | 'F')}
-                      className={`p-3 rounded-xl border text-center transition flex flex-col items-center gap-1 ${
-                        selectedFlowPara === item.paragraph
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md font-bold'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 font-medium'
-                      }`}
-                    >
-                      <span className="text-base font-black">
-                        Para {item.paragraph}
-                      </span>
-                      <span className="text-[10px] truncate max-w-[80px] opacity-80">
-                        {item.topic}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Selected Paragraph Detail Card */}
-                {(() => {
-                  const flow = AUTHOR_ARGUMENT_FLOW.find((f) => f.paragraph === selectedFlowPara)!;
-                  const paraObj = paragraphs.find((p) => p.id === selectedFlowPara);
-
-                  return (
-                    <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
-                        <div>
-                          <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                            Rhetorical Phase {selectedFlowPara} of 6
-                          </span>
-                          <h4 className="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">
-                            Paragraph {flow.paragraph}: {flow.topic}
-                          </h4>
-                        </div>
-
-                        <span className="px-3 py-1 rounded bg-blue-100 text-blue-900 font-bold text-xs self-start md:self-auto">
-                          Heading Target: Q{14 + ['A', 'B', 'C', 'D', 'E', 'F'].indexOf(flow.paragraph)}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left: Rhetorical Analysis */}
-                        <div className="space-y-4">
-                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                              Rhetorical Purpose in Argument
-                            </div>
-                            <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
-                              {flow.rhetoricalPurpose}
-                            </p>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                              Key Discourse Signals & Transition Phrases
-                            </div>
-                            <p className="text-xs sm:text-sm text-blue-700 font-mono font-medium">
-                              {flow.discourseSignal}
-                            </p>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-1">
-                              Author's Decisive Finding
-                            </div>
-                            <p className="text-xs sm:text-sm text-slate-900 font-semibold leading-relaxed">
-                              {flow.keyConclusion}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Right: Actual Passage Paragraph */}
-                        <div className="bg-white p-5 rounded-lg border border-slate-200 flex flex-col justify-between">
-                          <div>
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
-                              <span>Full Passage Text (Paragraph {selectedFlowPara})</span>
-                            </div>
-                            <p className="text-xs sm:text-sm text-slate-800 font-serif leading-relaxed italic">
-                              "{paraObj?.text}"
-                            </p>
-                          </div>
-
-                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                            <span>Paragraph Length: {paraObj?.text.split(/\s+/).length} words</span>
-                            {selectedFlowPara !== 'G' && (
-                              <button
-                                onClick={() => {
-                                  const paras: ('A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G')[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-                                  const next = paras[paras.indexOf(selectedFlowPara) + 1];
-                                  setSelectedFlowPara(next);
-                                }}
-                                className="text-blue-600 font-bold hover:underline flex items-center gap-1"
-                              >
-                                <span>Next Paragraph</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+          {/* TAB 4: MATCHING STATEMENTS WITH PEOPLE */}
+          {activeTab === 'matching-people' && (
+            <MatchingPeopleInsight
+              language={language}
+              onAddNote={onAddNote}
+            />
           )}
         </div>
       </div>
